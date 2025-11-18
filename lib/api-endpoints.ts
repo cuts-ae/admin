@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://34.130.93.201:45000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:45000";
 
 export const API_ENDPOINTS = {
   auth: {

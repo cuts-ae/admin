@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://34.130.93.201:45000/api/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:45000";
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -52,31 +52,49 @@ export async function apiRequest<T = any>(
 export const api = {
   // Auth
   login: (email: string, password: string) =>
-    apiRequest("/auth/login", {
+    apiRequest("/api/v1/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     }),
 
   // Admin endpoints
-  getAnalytics: () => apiRequest("/admin/analytics"),
+  getAnalytics: () => apiRequest("/api/v1/admin/analytics"),
 
-  getRestaurants: () => apiRequest("/admin/restaurants"),
+  getRestaurants: () => apiRequest("/api/v1/admin/restaurants"),
   approveRestaurant: (id: number) =>
-    apiRequest(`/admin/restaurants/${id}/approve`, { method: "POST" }),
+    apiRequest(`/api/v1/admin/restaurants/${id}/approve`, { method: "POST" }),
 
-  getDrivers: () => apiRequest("/admin/drivers"),
+  getDrivers: () => apiRequest("/api/v1/admin/drivers"),
   approveDriver: (id: number) =>
-    apiRequest(`/admin/drivers/${id}/approve`, { method: "POST" }),
+    apiRequest(`/api/v1/admin/drivers/${id}/approve`, { method: "POST" }),
 
-  getInvoices: () => apiRequest("/admin/invoices"),
-  getInvoiceDetails: (id: number) => apiRequest(`/admin/invoices/${id}`),
+  getInvoices: () => apiRequest("/api/v1/admin/invoices"),
+  getInvoiceDetails: (id: number) => apiRequest(`/api/v1/admin/invoices/${id}`),
   generateInvoice: (data: any) =>
-    apiRequest("/admin/invoices/generate", {
+    apiRequest("/api/v1/admin/invoices/generate", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
-  getUsers: () => apiRequest("/admin/users"),
+  getUsers: () => apiRequest("/api/v1/admin/users"),
+  getUserDetails: (id: number) => apiRequest(`/api/v1/admin/users/${id}`),
+  updateUser: (id: number, data: any) =>
+    apiRequest(`/api/v1/admin/users/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  getUserOrders: (userId: number) => apiRequest(`/api/v1/admin/users/${userId}/orders`),
+  updateUserStatus: (id: number, status: string) =>
+    apiRequest(`/api/v1/admin/users/${id}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+    }),
 
-  getOrders: () => apiRequest("/admin/orders"),
+  getOrders: () => apiRequest("/api/v1/admin/orders"),
+  getOrderDetails: (id: number) => apiRequest(`/api/v1/admin/orders/${id}`),
+  updateOrder: (id: number, data: any) =>
+    apiRequest(`/api/v1/admin/orders/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
 };

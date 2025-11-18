@@ -111,6 +111,31 @@
 }
 
 @layer utilities {
+  /* Hide Next.js development mode indicator - ALL VARIATIONS */
+  #__next-dev-overlay-container,
+  [data-nextjs-scroll-focus-boundary],
+  iframe[src*="nextjs-portal"],
+  [id*="__next"][id*="build"][id*="indicator"],
+  #__next-build-indicator,
+  nextjs-portal,
+  [data-nextjs-dialog],
+  [data-nextjs-dialog-overlay],
+  [data-nextjs-toast],
+  [class*="__nextjs"],
+  [class*="nextjs-portal"],
+  #__next-route-announcer__,
+  button[aria-label*="Next.js"],
+  button[aria-label*="Vercel"],
+  div[style*="position: fixed"][style*="bottom"][style*="left"],
+  div[style*="position: fixed"][style*="bottom"][style*="right"] > button[style*="background"],
+  nextjs-portal > *,
+  body > nextjs-portal {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
   .animate-in {
     animation: enter 200ms ease-out;
   }
@@ -212,5 +237,20 @@
       opacity: 1;
       transform: translateX(0);
     }
+  }
+
+  @keyframes markerFadeIn {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -100%) scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, -100%) scale(1);
+    }
+  }
+
+  .animate-marker-fade-in {
+    animation: markerFadeIn 0.5s ease-out both;
   }
 }

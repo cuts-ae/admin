@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { API_ENDPOINTS } from "@/lib/api-endpoints";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "@mui/icons-material";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -30,21 +30,26 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        throw new Error("Invalid response from server");
+      }
 
       if (!response.ok) {
         throw new Error(data.error || "Login failed");
       }
 
-      localStorage.setItem("auth-token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("admin_token", data.token);
+      localStorage.setItem("admin_user", JSON.stringify(data.user));
       const maxAge = 7 * 24 * 60 * 60;
-      document.cookie = `auth-token=${data.token}; path=/; max-age=${maxAge}`;
+      document.cookie = `admin_token=${data.token}; path=/; max-age=${maxAge}`;
 
       setSuccess(true);
 
       setTimeout(() => {
-        window.location.href = "/admin/dashboard";
+        window.location.href = "/dashboard";
       }, 500);
     } catch (err) {
       setError(
@@ -95,7 +100,7 @@ export default function LoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="admin@example.com"
+                    placeholder="admin@cuts.ae"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -214,7 +219,7 @@ export default function LoginPage() {
                         </span>
                       </div>
                       <code className="block text-sm font-mono bg-background/80 px-3 py-2 rounded border border-border/50 text-foreground">
-                        admin@example.com
+                        admin@cuts.ae
                       </code>
                     </div>
 

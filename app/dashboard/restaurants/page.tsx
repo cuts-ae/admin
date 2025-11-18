@@ -3,14 +3,20 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/admin-layout";
 import { api } from "@/lib/api";
-import { Check, X, Edit, Eye, Search } from "lucide-react";
+import { Check, CloseOutlined, EditOutlined, VisibilityOutlined, SearchOutlined } from "@mui/icons-material";
 
 interface Restaurant {
   id: number;
   name: string;
   email: string;
   phone: string;
-  address: string;
+  address: {
+    city?: string;
+    street?: string;
+    country?: string;
+    emirate?: string;
+    postal_code?: string;
+  } | string;
   status: string;
   created_at: string;
   commission_rate?: number;
@@ -63,7 +69,7 @@ export default function RestaurantsPage() {
         <div className="bg-white rounded-lg shadow p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <SearchOutlined className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
                 placeholder="Search restaurants..."
@@ -128,7 +134,11 @@ export default function RestaurantsPage() {
                       <td className="px-6 py-4">
                         <div>
                           <p className="font-medium text-gray-900">{restaurant.name}</p>
-                          <p className="text-sm text-gray-500">{restaurant.address}</p>
+                          <p className="text-sm text-gray-500">
+                            {typeof restaurant.address === 'string'
+                              ? restaurant.address
+                              : `${restaurant.address?.street || ''}, ${restaurant.address?.city || ''}, ${restaurant.address?.emirate || ''}`.replace(/(^,\s*|,\s*$|,\s*,)/g, '').trim() || 'No address'}
+                          </p>
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -171,19 +181,19 @@ export default function RestaurantsPage() {
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                             title="View Details"
                           >
-                            <Eye className="w-4 h-4" />
+                            <VisibilityOutlined className="w-4 h-4" />
                           </button>
                           <button
                             className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
                             title="Edit"
                           >
-                            <Edit className="w-4 h-4" />
+                            <EditOutlined className="w-4 h-4" />
                           </button>
                           <button
                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Suspend"
                           >
-                            <X className="w-4 h-4" />
+                            <CloseOutlined className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
