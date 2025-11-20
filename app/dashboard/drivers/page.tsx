@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/admin-layout";
 import { api } from "@/lib/api";
-import { Check, VisibilityOutlined, CloseOutlined } from "@mui/icons-material";
+import { Check, Eye, X } from "@/components/icons";
 
 export default function DriversPage() {
   const [drivers, setDrivers] = useState<any[]>([]);

@@ -32,8 +32,8 @@ npm start
 ## Demo Credentials
 
 ```
-Email: admin@example.com
-Password: password123
+Email: admin@cuts.ae
+Password: TabsTriggerIsnt2026*$
 ```
 
 Note: User must have `role = 'admin'` in the database to access the portal.

@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import AdminLayout from "@/components/admin-layout";
 import UserDetailModal from "@/components/user-detail-modal";
 import { api } from "@/lib/api";
-import { Ban, VisibilityOutlined, SearchOutlined, UserCheck, PeopleOutlined, ShoppingBag, Banknote, TrendingUp } from "@mui/icons-material";
+import { XCircle, Eye, Search, Users, ShoppingBag, Banknote, TrendingUp } from "@/components/icons";
+import { CheckCircle } from "@/components/icons";
 
 interface User {
   id: number;
@@ -91,7 +92,7 @@ export default function UsersPage() {
                 <p className="text-4xl font-bold mt-2">{totalUsers}</p>
                 <p className="text-blue-100 text-xs mt-2">All registered accounts</p>
               </div>
-              <PeopleOutlined className="w-12 h-12 text-blue-200 opacity-80" />
+              <Users className="w-12 h-12 text-blue-200 opacity-80" />
             </div>
           </div>
 
@@ -195,7 +196,7 @@ export default function UsersPage() {
         <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="relative">
-              <SearchOutlined className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
                 placeholder="Search by name, email, or phone..."
@@ -235,7 +236,7 @@ export default function UsersPage() {
             </div>
           ) : filteredUsers.length === 0 ? (
             <div className="text-center py-16">
-              <PeopleOutlined className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500 text-lg">No users found</p>
               <p className="text-gray-400 text-sm mt-2">
                 Try adjusting your search or filter criteria
@@ -349,7 +350,7 @@ export default function UsersPage() {
                               className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
                               title="View Full Details"
                             >
-                              <VisibilityOutlined className="w-4 h-4" />
+                              <Eye className="w-4 h-4" />
                             </button>
                             {user.status === "active" ? (
                               <button
@@ -366,7 +367,7 @@ export default function UsersPage() {
                                 className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
                                 title="Suspend User"
                               >
-                                <Ban className="w-4 h-4" />
+                                <XCircle className="w-4 h-4" />
                               </button>
                             ) : (
                               <button
@@ -377,7 +378,7 @@ export default function UsersPage() {
                                 className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors"
                                 title="Activate User"
                               >
-                                <UserCheck className="w-4 h-4" />
+                                <CheckCircle className="w-4 h-4" />
                               </button>
                             )}
                           </div>

@@ -4,27 +4,47 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
-  DashboardOutlined,
-  StorefrontOutlined,
-  DescriptionOutlined,
-  PeopleOutlined,
-  LocalShippingOutlined,
-  ShoppingCartOutlined,
-  SettingsOutlined,
-  LogoutOutlined,
-  MenuOutlined,
-  CloseOutlined,
-} from "@mui/icons-material";
+  LayoutDashboard,
+  Store,
+  FileText,
+  Users,
+  Truck,
+  ShoppingCart,
+  Settings,
+  LogOut,
+  Menu,
+  X,
+  Clock,
+  Search,
+} from "@/components/icons";
+
+interface StatWidget {
+  label: string;
+  value: string;
+  icon: React.ComponentType<any>;
+  color: string;
+}
 
 interface AdminLayoutProps {
   children: React.ReactNode;
+  pageTitle?: string;
+  pageSubtitle?: string;
+  showLastUpdated?: boolean;
+  showSearch?: boolean;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  showStatusFilter?: boolean;
+  statusValue?: string;
+  onStatusChange?: (value: string) => void;
+  statWidgets?: StatWidget[];
 }
 
-export default function AdminLayout({ children }: AdminLayoutProps) {
+export default function AdminLayout({ children, pageTitle, pageSubtitle, showLastUpdated, showSearch, searchValue, onSearchChange, showStatusFilter, statusValue, onStatusChange, statWidgets }: AdminLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     const token = localStorage.getItem("admin_token");
@@ -44,6 +64,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     setUser(parsedUser);
   }, [router]);
 
+  useEffect(() => {
+    if (showLastUpdated) {
+      const interval = setInterval(() => {
+        setCurrentTime(new Date());
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [showLastUpdated]);
+
   const handleLogout = () => {
     localStorage.removeItem("admin_token");
     localStorage.removeItem("admin_user");
@@ -55,13 +84,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   const navigation = [
-    { name: "Dashboard", href: "/dashboard", icon: DashboardOutlined },
-    { name: "Restaurants", href: "/dashboard/restaurants", icon: StorefrontOutlined },
-    { name: "Invoices", href: "/dashboard/invoices", icon: DescriptionOutlined },
-    { name: "Users", href: "/dashboard/users", icon: PeopleOutlined },
-    { name: "Drivers", href: "/dashboard/drivers", icon: LocalShippingOutlined },
-    { name: "Orders", href: "/dashboard/orders", icon: ShoppingCartOutlined },
-    { name: "Settings", href: "/dashboard/settings", icon: SettingsOutlined },
+    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Restaurants", href: "/dashboard/restaurants", icon: Store },
+    { name: "Invoices", href: "/dashboard/invoices", icon: FileText },
+    { name: "Users", href: "/dashboard/users", icon: Users },
+    { name: "Drivers", href: "/dashboard/drivers", icon: Truck },
+    { name: "Orders", href: "/dashboard/orders", icon: ShoppingCart },
+    { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];
 
   return (
@@ -85,23 +114,23 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-between h-20 px-6 border-b border-border/40">
+          <div className="flex items-center justify-between h-16 px-6 border-b border-border/40">
             <div className="flex items-center gap-3">
               <img
                 src="/logo.png"
                 alt="Logo"
                 className="w-10 h-10 object-contain"
               />
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">Administrator</h1>
-                <p className="text-xs text-muted-foreground">Portal</p>
+              <div className="flex flex-col justify-center">
+                <h1 className="text-lg font-bold text-gray-900 leading-tight">Administrator</h1>
+                <p className="text-xs text-muted-foreground leading-tight">Portal</p>
               </div>
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
               className="lg:hidden text-gray-500 hover:text-gray-700"
             >
-              <CloseOutlined className="w-5 h-5" />
+              <X className="w-5 h-5" />
             </button>
           </div>
 
@@ -132,10 +161,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <div className="border-t border-border/40 p-4 bg-muted/30">
             <div className="flex items-center mb-4 px-2">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold mr-3">
-                {(user.name || user.email).charAt(0).toUpperCase()}
+                {(user.first_name || user.email).charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{user.name || user.email}</p>
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.email}
+                </p>
                 <p className="text-xs text-gray-500 truncate">{user.email}</p>
               </div>
             </div>
@@ -143,7 +174,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               onClick={handleLogout}
               className="flex items-center w-full px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 rounded-lg transition-colors"
             >
-              <LogoutOutlined className="w-5 h-5 mr-3" />
+              <LogOut className="w-5 h-5 mr-3" />
               Logout
             </button>
           </div>
@@ -153,16 +184,74 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar */}
-        <div className="relative sticky top-0 z-10 flex items-center h-16 bg-white/95 backdrop-blur-md border-b border-border/40 px-6 shadow-sm">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="lg:hidden text-gray-500 hover:text-gray-700 mr-4"
-          >
-            <MenuOutlined className="w-6 h-6" />
-          </button>
-          <h2 className="text-lg font-semibold text-gray-900">
-            {navigation.find((item) => item.href === pathname)?.name || "Dashboard"}
-          </h2>
+        <div className="relative sticky top-0 z-10 flex items-center justify-between h-16 bg-white/95 backdrop-blur-md border-b border-border/40 px-6">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden text-gray-500 hover:text-gray-700"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+            <div className="flex flex-col justify-center">
+              <h2 className="text-lg font-bold text-gray-900 leading-tight">
+                {pageTitle || navigation.find((item) => item.href === pathname)?.name || "Dashboard"}
+              </h2>
+              {pageSubtitle && (
+                <p className="text-xs text-muted-foreground leading-tight">
+                  {pageSubtitle}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {statWidgets && statWidgets.length > 0 && (
+              <div className="flex items-center gap-2">
+                {statWidgets.map((stat, index) => {
+                  const Icon = stat.icon;
+                  return (
+                    <div key={index} className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${stat.color}`}>
+                      <Icon className="w-4 h-4" />
+                      <div className="flex flex-col">
+                        <span className="text-xs font-medium leading-none">{stat.label}</span>
+                        <span className="text-sm font-bold leading-none mt-0.5">{stat.value}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {showSearch && onSearchChange && (
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchValue}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  className="w-64 pl-9 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            )}
+            {showStatusFilter && onStatusChange && (
+              <select
+                value={statusValue}
+                onChange={(e) => onStatusChange(e.target.value)}
+                className="pl-3 pr-9 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="pending">Pending</option>
+                <option value="suspended">Suspended</option>
+              </select>
+            )}
+            {showLastUpdated && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className="w-4 h-4" />
+                <span>Last updated: {currentTime.toLocaleTimeString()}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Page content */}

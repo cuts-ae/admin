@@ -1,23 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import AdminLayout from "@/components/admin-layout";
 import { api } from "@/lib/api";
-import { DownloadOutlined, AttachMoneyOutlined, DescriptionOutlined, CalendarMonthOutlined } from "@mui/icons-material";
+import { Download, TrendingUp, FileText, Calendar } from "@/components/icons";
 import { downloadInvoicePDF, type InvoiceData } from "@/components/invoice-pdf";
 
 interface Invoice {
-  id: number;
-  restaurant_id: number;
+  id: string;
+  order_id: string;
+  order_number: string;
+  invoice_number: number;
+  invoice_type: string;
+  customer_name: string;
+  customer_email: string;
   restaurant_name: string;
-  period_start: string;
-  period_end: string;
   amount: number;
   status: string;
   created_at: string;
 }
 
 export default function InvoicesPage() {
+  const router = useRouter();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -36,73 +41,49 @@ export default function InvoicesPage() {
 
   const handleDownloadPDF = async (invoice: Invoice) => {
     const invoiceData: InvoiceData = {
+      id: invoice.id,
       invoiceNumber: `INV-${invoice.id.toString().padStart(6, '0')}`,
-      date: new Date(invoice.created_at).toLocaleDateString(),
-      restaurantName: invoice.restaurant_name,
-      periodStart: new Date(invoice.period_start).toLocaleDateString(),
-      periodEnd: new Date(invoice.period_end).toLocaleDateString(),
+      restaurant_name: invoice.restaurant_name,
       amount: invoice.amount,
       status: invoice.status,
+      created_at: invoice.created_at,
     };
 
-    downloadInvoicePDF(invoiceData);
+    await downloadInvoicePDF(invoiceData);
   };
 
-  return (
-    <AdminLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-1">Invoices</h1>
-          <p className="text-gray-600">Manage restaurant invoices and payments</p>
-        </div>
+  const totalRevenue = invoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
+  const pendingAmount = invoices.filter((inv) => inv.status === "pending").reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
+  const paidCount = invoices.filter((inv) => inv.status === "paid").length;
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">
-                  AED {invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0).toFixed(2)}
-                </p>
-              </div>
-              <div className="bg-green-50 rounded-full p-3">
-                <AttachMoneyOutlined className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Pending Payments</p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">
-                  AED{" "}
-                  {invoices
-                    .filter((inv) => inv.status === "pending")
-                    .reduce((sum, inv) => sum + inv.amount, 0)
-                    .toFixed(2)}
-                </p>
-              </div>
-              <div className="bg-yellow-50 rounded-full p-3">
-                <DescriptionOutlined className="w-6 h-6 text-yellow-600" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Paid Invoices</p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">
-                  {invoices.filter((inv) => inv.status === "paid").length}
-                </p>
-              </div>
-              <div className="bg-blue-50 rounded-full p-3">
-                <CalendarMonthOutlined className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </div>
-        </div>
+  const statWidgets = [
+    {
+      label: "Total Revenue",
+      value: `AED ${totalRevenue.toFixed(0)}`,
+      icon: TrendingUp,
+      color: "bg-green-50 text-green-700",
+    },
+    {
+      label: "Pending",
+      value: `AED ${pendingAmount.toFixed(0)}`,
+      icon: FileText,
+      color: "bg-yellow-50 text-yellow-700",
+    },
+    {
+      label: "Paid",
+      value: `${paidCount}`,
+      icon: Calendar,
+      color: "bg-blue-50 text-blue-700",
+    },
+  ];
+
+  return (
+    <AdminLayout
+      pageTitle="Invoices"
+      pageSubtitle="Manage restaurant invoices and payments"
+      statWidgets={statWidgets}
+    >
+      <div className="space-y-6">
 
         {/* Invoices Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -122,10 +103,10 @@ export default function InvoicesPage() {
                     Invoice #
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Restaurant
+                    Customer
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Period
+                    Restaurant
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Amount
@@ -134,25 +115,31 @@ export default function InvoicesPage() {
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    Date
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {invoices.map((invoice) => (
-                  <tr key={invoice.id}>
+                  <tr
+                    key={invoice.id}
+                    onClick={() => router.push(`/dashboard/invoices/${invoice.id}`)}
+                    className="hover:bg-gray-50 cursor-pointer transition-colors"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      INV-{invoice.id.toString().padStart(6, '0')}
+                      {invoice.order_number}-{invoice.invoice_number}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{invoice.customer_name}</p>
+                        <p className="text-xs text-gray-500">{invoice.customer_email}</p>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {invoice.restaurant_name}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(invoice.period_start).toLocaleDateString()} -{" "}
-                      {new Date(invoice.period_end).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      AED {invoice.amount.toFixed(2)}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                      AED {Number(invoice.amount).toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
@@ -168,13 +155,7 @@ export default function InvoicesPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <button
-                        onClick={() => handleDownloadPDF(invoice)}
-                        className="text-blue-600 hover:text-blue-900 flex items-center gap-1"
-                      >
-                        <DownloadOutlined className="w-4 h-4" />
-                        Download
-                      </button>
+                      {new Date(invoice.created_at).toLocaleDateString()}
                     </td>
                   </tr>
                 ))}

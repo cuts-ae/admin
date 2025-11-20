@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/admin-layout";
 import { api } from "@/lib/api";
-import { Check, CloseOutlined, EditOutlined, VisibilityOutlined, SearchOutlined } from "@mui/icons-material";
+import { Check, X, Edit, Eye, Search } from "@/components/icons";
 
 interface Restaurant {
   id: number;
@@ -58,40 +58,17 @@ export default function RestaurantsPage() {
   });
 
   return (
-    <AdminLayout>
+    <AdminLayout
+      pageTitle="Restaurants"
+      pageSubtitle="View and manage all registered restaurants"
+      showSearch={true}
+      searchValue={searchTerm}
+      onSearchChange={setSearchTerm}
+      showStatusFilter={true}
+      statusValue={filterStatus}
+      onStatusChange={setFilterStatus}
+    >
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Restaurants Management</h1>
-          <p className="text-gray-600 mt-1">View and manage all registered restaurants</p>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="relative">
-              <SearchOutlined className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search restaurants..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="pending">Pending</option>
-                <option value="suspended">Suspended</option>
-              </select>
-            </div>
-          </div>
-        </div>
 
         {/* Restaurants Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -181,19 +158,19 @@ export default function RestaurantsPage() {
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                             title="View Details"
                           >
-                            <VisibilityOutlined className="w-4 h-4" />
+                            <Eye className="w-4 h-4" />
                           </button>
                           <button
                             className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
                             title="Edit"
                           >
-                            <EditOutlined className="w-4 h-4" />
+                            <Edit className="w-4 h-4" />
                           </button>
                           <button
                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Suspend"
                           >
-                            <CloseOutlined className="w-4 h-4" />
+                            <X className="w-4 h-4" />
                           </button>
                         </div>
                       </td>

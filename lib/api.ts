@@ -69,7 +69,7 @@ export const api = {
     apiRequest(`/api/v1/admin/drivers/${id}/approve`, { method: "POST" }),
 
   getInvoices: () => apiRequest("/api/v1/admin/invoices"),
-  getInvoiceDetails: (id: number) => apiRequest(`/api/v1/admin/invoices/${id}`),
+  getInvoiceDetails: (id: string) => apiRequest(`/api/v1/admin/invoices/${id}`),
   generateInvoice: (data: any) =>
     apiRequest("/api/v1/admin/invoices/generate", {
       method: "POST",
@@ -91,8 +91,8 @@ export const api = {
     }),
 
   getOrders: () => apiRequest("/api/v1/admin/orders"),
-  getOrderDetails: (id: number) => apiRequest(`/api/v1/admin/orders/${id}`),
-  updateOrder: (id: number, data: any) =>
+  getOrderDetails: (id: string) => apiRequest(`/api/v1/admin/orders/${id}`),
+  updateOrder: (id: string, data: any) =>
     apiRequest(`/api/v1/admin/orders/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),

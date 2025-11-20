@@ -3,23 +3,22 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import {
-  CloseOutlined,
+  X,
   User,
   Mail,
   Phone,
   MapPin,
   Calendar,
   ShoppingBag,
-  Edit2,
-  Save,
+  Edit,
+  CheckCircle,
   XCircle,
   FileText,
   Package,
   DollarSign,
   Clock,
-  CheckCircle,
   AlertCircle,
-} from "@mui/icons-material";
+} from "@/components/icons";
 
 interface UserDetails {
   id: number;
@@ -214,7 +213,7 @@ export default function UserDetailModal({
             onClick={onClose}
             className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
           >
-            <CloseOutlined className="w-6 h-6" />
+            <X className="w-6 h-6" />
           </button>
         </div>
 
@@ -281,7 +280,7 @@ export default function UserDetailModal({
                         disabled={saving}
                         className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
                       >
-                        <Save className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4" />
                         <span>{saving ? "Saving..." : "Save Changes"}</span>
                       </button>
                     </>
@@ -290,7 +289,7 @@ export default function UserDetailModal({
                       onClick={() => setEditMode(true)}
                       className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
-                      <Edit2 className="w-4 h-4" />
+                      <Edit className="w-4 h-4" />
                       <span>Edit User</span>
                     </button>
                   )}

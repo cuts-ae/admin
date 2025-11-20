@@ -5,16 +5,17 @@ import AdminLayout from "@/components/admin-layout";
 import RestaurantMap from "@/components/restaurant-map";
 import { api } from "@/lib/api";
 import {
-  TrendingUpOutlined,
-  AttachMoneyOutlined,
-  ShoppingCartOutlined,
-  PeopleOutlined,
-  StorefrontOutlined,
-  ViewInArOutlined,
-  BarChartOutlined,
-  AccessTimeOutlined,
-  LocationOnOutlined
-} from "@mui/icons-material";
+  TrendingUp,
+  DollarSign,
+  ShoppingCart,
+  Users,
+  Store,
+  Trophy,
+  BarChart as BarChartIcon,
+  Clock,
+  MapPin,
+} from "@/components/icons";
+import { Truck } from "@/components/icons";
 import {
   LineChart,
   Line,
@@ -27,6 +28,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Cell,
 } from "recharts";
 
 interface Analytics {
@@ -41,7 +43,7 @@ interface Analytics {
 // Mock restaurant locations in Abu Dhabi
 const mockRestaurants = [
   { id: 1, name: "FitFresh Abu Dhabi", latitude: 24.4539, longitude: 54.3773, status: "active", orders_today: 45 },
-  { id: 2, name: "Healthy Bites Marina", latitude: 24.4700, longitude: 54.3600, status: "active", orders_today: 32 },
+  { id: 2, name: "Healthy Bites Marina", latitude: 24.4200, longitude: 54.5500, status: "active", orders_today: 32 },
   { id: 3, name: "Green Bowl Yas", latitude: 24.4900, longitude: 54.6100, status: "active", orders_today: 28 },
   { id: 4, name: "Fresh Eats Downtown", latitude: 24.4200, longitude: 54.4300, status: "inactive", orders_today: 0 },
   { id: 5, name: "Protein Palace Corniche", latitude: 24.4800, longitude: 54.3500, status: "active", orders_today: 51 },
@@ -70,6 +72,14 @@ const ordersPerHour = [
   { hour: "10PM", orders: 38 },
 ];
 
+const orderStatusData = [
+  { status: "Pending", count: 12, color: "#f59e0b" },
+  { status: "Confirmed", count: 34, color: "#3b82f6" },
+  { status: "Preparing", count: 45, color: "#8b5cf6" },
+  { status: "Ready", count: 38, color: "#10b981" },
+  { status: "Delivered", count: 127, color: "#059669" },
+];
+
 export default function DashboardPage() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
@@ -93,7 +103,7 @@ export default function DashboardPage() {
       value: "AED 124,850",
       change: "+12.5%",
       trend: "up",
-      icon: AttachMoneyOutlined,
+      icon: TrendingUp,
       color: "from-emerald-500 to-emerald-600",
     },
     {
@@ -101,7 +111,7 @@ export default function DashboardPage() {
       value: "156",
       change: "+23%",
       trend: "up",
-      icon: ShoppingCartOutlined,
+      icon: ShoppingCart,
       color: "from-blue-500 to-blue-600",
     },
     {
@@ -109,7 +119,7 @@ export default function DashboardPage() {
       value: "2,847",
       change: "+8.1%",
       trend: "up",
-      icon: PeopleOutlined,
+      icon: Users,
       color: "from-purple-500 to-purple-600",
     },
     {
@@ -117,8 +127,24 @@ export default function DashboardPage() {
       value: "4/5",
       change: "80%",
       trend: "neutral",
-      icon: StorefrontOutlined,
+      icon: Store,
       color: "from-orange-500 to-orange-600",
+    },
+    {
+      name: "Pending Approvals",
+      value: "12",
+      change: "3 new",
+      trend: "neutral",
+      icon: Clock,
+      color: "from-amber-500 to-amber-600",
+    },
+    {
+      name: "Active Drivers",
+      value: "28",
+      change: "+5 today",
+      trend: "up",
+      icon: Users,
+      color: "from-indigo-500 to-indigo-600",
     },
   ];
 
@@ -127,7 +153,7 @@ export default function DashboardPage() {
       <AdminLayout>
         <div className="flex items-center justify-center h-[600px]">
           <div className="text-center">
-            <BarChartOutlined className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+            <BarChartIcon className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
             <p className="text-gray-500 font-medium">Loading dashboard...</p>
           </div>
         </div>
@@ -136,35 +162,26 @@ export default function DashboardPage() {
   }
 
   return (
-    <AdminLayout>
+    <AdminLayout
+      pageTitle="Dashboard"
+      pageSubtitle="Real-time platform analytics and insights"
+      showLastUpdated={true}
+    >
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-1">Dashboard</h1>
-            <p className="text-gray-600">Real-time platform analytics and insights</p>
-          </div>
-          <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-border/40 shadow-sm">
-            <AccessTimeOutlined className="w-4 h-4 text-gray-500" />
-            <span className="text-sm text-gray-700 font-medium">
-              Last updated: {new Date().toLocaleTimeString()}
-            </span>
-          </div>
-        </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             return (
               <div
                 key={stat.name}
-                className="bg-white rounded-xl shadow-sm border border-border/40 p-6 hover:shadow-md transition-all"
+                className="bg-white rounded-xl shadow-sm border border-border/40 p-5 hover:shadow-md transition-all"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg`}>
-                    <Icon className="w-6 h-6 text-white" />
+                <div className="flex items-start justify-between mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-gray-900 flex items-center justify-center shadow-lg">
+                    <Icon className="w-5 h-5 text-white" />
                   </div>
                   {stat.trend !== "neutral" && (
                     <span className={`text-xs font-semibold px-2 py-1 rounded ${
@@ -181,27 +198,66 @@ export default function DashboardPage() {
           })}
         </div>
 
-        {/* Map and Revenue Chart */}
+        {/* Map and Top Restaurants */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Restaurant Map */}
           <div className="bg-white rounded-xl shadow-sm border border-border/40 p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <LocationOnOutlined className="w-5 h-5 text-gray-700" />
-              <h3 className="text-lg font-semibold text-gray-900">Restaurant Locations</h3>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-gray-700" />
+                <h3 className="text-lg font-semibold text-gray-900">Restaurant Locations</h3>
+              </div>
+              <p className="text-sm text-gray-600">Abu Dhabi, United Arab Emirates</p>
             </div>
             <div className="h-[400px]">
               <RestaurantMap restaurants={mockRestaurants} />
             </div>
           </div>
 
+          {/* Top Restaurants */}
+          <div className="bg-white rounded-xl shadow-sm border border-border/40 p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Trophy className="w-5 h-5 text-gray-700" />
+              <h3 className="text-lg font-semibold text-gray-900">Top Performing Restaurants</h3>
+            </div>
+            <div className="space-y-4">
+              {[
+                ...mockRestaurants.filter(r => r.status === "active"),
+                { id: 6, name: "Healthy Haven", latitude: 0, longitude: 0, status: "active", orders_today: 18 }
+              ]
+                .sort((a, b) => (b.orders_today || 0) - (a.orders_today || 0))
+                .slice(0, 5)
+                .map((restaurant, index) => (
+                  <div key={restaurant.id} className="flex items-center justify-between py-3 border-b last:border-0">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-gray-900 flex items-center justify-center text-white font-bold shadow-lg">
+                        #{index + 1}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{restaurant.name}</p>
+                        <p className="text-sm text-gray-600">{restaurant.orders_today} orders today</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-gray-900">AED {((restaurant.orders_today || 0) * 85).toFixed(0)}</p>
+                      <p className="text-xs text-gray-500">Revenue</p>
+                    </div>
+                  </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Three Charts Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Revenue Chart */}
           <div className="bg-white rounded-xl shadow-sm border border-border/40 p-6">
             <div className="flex items-center gap-2 mb-4">
-              <TrendingUpOutlined className="w-5 h-5 text-gray-700" />
+              <TrendingUp className="w-5 h-5 text-gray-700" />
               <h3 className="text-lg font-semibold text-gray-900">Revenue Trend</h3>
             </div>
-            <ResponsiveContainer width="100%" height={400}>
-              <AreaChart data={revenueData}>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 10 }}>
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
@@ -209,8 +265,8 @@ export default function DashboardPage() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="day" stroke="#6b7280" />
-                <YAxis stroke="#6b7280" />
+                <XAxis dataKey="day" stroke="#6b7280" fontSize={10} />
+                <YAxis stroke="#6b7280" fontSize={10} domain={[1000, 'auto']} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "white",
@@ -229,21 +285,45 @@ export default function DashboardPage() {
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </div>
 
-        {/* Orders Per Hour and Top Restaurants */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Order Status Distribution */}
+          <div className="bg-white rounded-xl shadow-sm border border-border/40 p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <ShoppingCart className="w-5 h-5 text-gray-700" />
+              <h3 className="text-lg font-semibold text-gray-900">Order Status</h3>
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={orderStatusData} margin={{ top: 5, right: 5, left: -30, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="status" stroke="#6b7280" fontSize={10} />
+                <YAxis stroke="#6b7280" fontSize={10} domain={[1, 'auto']} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "white",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "8px",
+                  }}
+                />
+                <Bar dataKey="count" fill="#6b7280" radius={[8, 8, 0, 0]}>
+                  {orderStatusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
           {/* Peak Hours */}
           <div className="bg-white rounded-xl shadow-sm border border-border/40 p-6">
             <div className="flex items-center gap-2 mb-4">
-              <BarChartOutlined className="w-5 h-5 text-gray-700" />
+              <BarChartIcon className="w-5 h-5 text-gray-700" />
               <h3 className="text-lg font-semibold text-gray-900">Orders by Hour</h3>
             </div>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={ordersPerHour}>
+              <BarChart data={ordersPerHour} margin={{ top: 10, right: 10, left: -20, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="hour" stroke="#6b7280" />
-                <YAxis stroke="#6b7280" />
+                <XAxis dataKey="hour" stroke="#6b7280" fontSize={10} />
+                <YAxis stroke="#6b7280" fontSize={10} domain={[1, 'auto']} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "white",
@@ -254,36 +334,6 @@ export default function DashboardPage() {
                 <Bar dataKey="orders" fill="#3b82f6" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </div>
-
-          {/* Top Restaurants */}
-          <div className="bg-white rounded-xl shadow-sm border border-border/40 p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <ViewInArOutlined className="w-5 h-5 text-gray-700" />
-              <h3 className="text-lg font-semibold text-gray-900">Top Performing Restaurants</h3>
-            </div>
-            <div className="space-y-4">
-              {mockRestaurants
-                .filter(r => r.status === "active")
-                .sort((a, b) => (b.orders_today || 0) - (a.orders_today || 0))
-                .map((restaurant, index) => (
-                  <div key={restaurant.id} className="flex items-center justify-between py-3 border-b last:border-0">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold shadow-lg">
-                        #{index + 1}
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{restaurant.name}</p>
-                        <p className="text-sm text-gray-600">{restaurant.orders_today} orders today</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-gray-900">AED {((restaurant.orders_today || 0) * 85).toFixed(0)}</p>
-                      <p className="text-xs text-gray-500">Revenue</p>
-                    </div>
-                  </div>
-              ))}
-            </div>
           </div>
         </div>
       </div>

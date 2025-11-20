@@ -91,7 +91,7 @@ Utility components:
 ### Demo Credentials
 ```
 Email: admin@cuts.ae
-Password: password123
+Password: TabsTriggerIsnt2026*$
 ```
 
 ### Port Assignments

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LocationOnOutlined, LoopOutlined, ErrorOutlineOutlined } from "@mui/icons-material";
+import { MapPin, Loader, AlertCircle } from "@/components/icons";
 
 interface Restaurant {
   id: number;
@@ -128,7 +128,7 @@ export default function RestaurantMap({ restaurants }: RestaurantMapProps) {
 
             // Create annotation
             const annotation = new window.mapkit.MarkerAnnotation(coordinate, {
-              color: isActive ? "#10b981" : "#9ca3af",
+              color: "#ef4444",
               glyphColor: "#ffffff",
               title: restaurant.name,
               subtitle: `${isActive ? "Active" : "Inactive"}${
@@ -174,7 +174,7 @@ export default function RestaurantMap({ restaurants }: RestaurantMapProps) {
     return (
       <div className="relative w-full h-full bg-gradient-to-br from-red-50 to-orange-50 rounded-lg overflow-hidden border border-red-200 flex items-center justify-center">
         <div className="text-center p-6">
-          <ErrorOutlineOutlined className="w-12 h-12 text-red-500 mx-auto mb-3" />
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
           <p className="text-sm font-medium text-red-700 mb-1">Apple Maps Unavailable</p>
           <p className="text-xs text-red-600 max-w-md mb-2">{error}</p>
           <p className="text-xs text-gray-600 mt-3">
@@ -198,21 +198,13 @@ export default function RestaurantMap({ restaurants }: RestaurantMapProps) {
       {!mapLoaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
           <div className="text-center">
-            <LoopOutlined className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-2" />
+            <Loader className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-2" />
             <p className="text-sm text-gray-600">Loading Apple Maps...</p>
           </div>
         </div>
       )}
 
       <div ref={mapRef} className="w-full h-full" />
-
-      {/* Location Label Overlay */}
-      {mapLoaded && !error && (
-        <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-md rounded-lg shadow-lg px-4 py-2 border border-border/40 z-10 pointer-events-none">
-          <h3 className="text-sm font-semibold text-gray-900">Abu Dhabi, UAE</h3>
-          <p className="text-xs text-muted-foreground">{restaurants.length} Restaurants</p>
-        </div>
-      )}
     </div>
   );
 }

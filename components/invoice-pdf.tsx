@@ -1,7 +1,7 @@
 "use client";
 
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import html2canvas from "html2canvas";
 
 export interface InvoiceData {
   id: number;
@@ -32,271 +32,198 @@ export interface InvoiceData {
   }>;
 }
 
-export function generateInvoicePDF(invoiceData: InvoiceData) {
-  const doc = new jsPDF();
+export async function generateInvoicePDF(invoiceData: InvoiceData) {
+  const issueDate = new Date(invoiceData.created_at);
+  const dueDate = new Date(invoiceData.period_end);
+  dueDate.setDate(dueDate.getDate() + 7);
 
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
+  const subtotal = invoiceData.orders?.reduce((sum, order) => sum + order.subtotal, 0) || 0;
 
-  // Colors
-  const primaryColor: [number, number, number] = [37, 99, 235]; // Blue-600
-  const textDark: [number, number, number] = [17, 24, 39]; // Gray-900
-  const textLight: [number, number, number] = [107, 114, 128]; // Gray-500
-  const bgLight: [number, number, number] = [249, 250, 251]; // Gray-50
+  // Create a hidden div for the invoice HTML
+  const invoiceContainer = document.createElement("div");
+  invoiceContainer.style.position = "absolute";
+  invoiceContainer.style.left = "-9999px";
+  invoiceContainer.style.width = "210mm"; // A4 width
+  invoiceContainer.style.padding = "20mm";
+  invoiceContainer.style.backgroundColor = "#ffffff";
+  invoiceContainer.style.fontFamily = "var(--font-geist-sans), -apple-system, sans-serif";
 
-  let yPosition = 20;
-
-  // Header - Company Name
-  doc.setFontSize(24);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text("CUTS.AE", 20, yPosition);
-
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(textLight[0], textLight[1], textLight[2]);
-  doc.text("Food Delivery Platform", 20, yPosition + 6);
-
-  // Invoice Title and Number (Right aligned)
-  doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(textDark[0], textDark[1], textDark[2]);
-  doc.text("INVOICE", pageWidth - 20, yPosition, { align: "right" });
-
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(textLight[0], textLight[1], textLight[2]);
-  doc.text(invoiceData.invoiceNumber, pageWidth - 20, yPosition + 6, { align: "right" });
-
-  yPosition += 25;
-
-  // Horizontal line
-  doc.setDrawColor(229, 231, 235); // Gray-200
-  doc.setLineWidth(0.5);
-  doc.line(20, yPosition, pageWidth - 20, yPosition);
-
-  yPosition += 15;
-
-  // Invoice Details - Two columns
-  const leftColX = 20;
-  const rightColX = pageWidth / 2 + 10;
-
-  // Left Column - Bill To
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(textDark[0], textDark[1], textDark[2]);
-  doc.text("BILL TO", leftColX, yPosition);
-
-  yPosition += 6;
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-  doc.text(invoiceData.restaurant_name, leftColX, yPosition);
-  yPosition += 5;
-
-  doc.setFontSize(9);
-  doc.setTextColor(textLight[0], textLight[1], textLight[2]);
-  if (invoiceData.restaurant_address) {
-    doc.text(invoiceData.restaurant_address, leftColX, yPosition);
-    yPosition += 4;
-  }
-  if (invoiceData.restaurant_email) {
-    doc.text(invoiceData.restaurant_email, leftColX, yPosition);
-    yPosition += 4;
-  }
-  if (invoiceData.restaurant_phone) {
-    doc.text(invoiceData.restaurant_phone, leftColX, yPosition);
-  }
-
-  // Reset yPosition for right column
-  yPosition -= (invoiceData.restaurant_address ? 4 : 0) +
-               (invoiceData.restaurant_email ? 4 : 0) +
-               (invoiceData.restaurant_phone ? 4 : 0) + 11;
-
-  // Right Column - Invoice Details
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(textDark[0], textDark[1], textDark[2]);
-  doc.text("INVOICE DETAILS", rightColX, yPosition);
-
-  yPosition += 6;
-
-  const details = [
-    { label: "Invoice Date:", value: new Date(invoiceData.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) },
-    { label: "Period:", value: `${new Date(invoiceData.period_start).toLocaleDateString()} - ${new Date(invoiceData.period_end).toLocaleDateString()}` },
-    { label: "Status:", value: invoiceData.status.toUpperCase() },
-  ];
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-
-  details.forEach((detail) => {
-    doc.setTextColor(textLight[0], textLight[1], textLight[2]);
-    doc.text(detail.label, rightColX, yPosition);
-    doc.setTextColor(textDark[0], textDark[1], textDark[2]);
-    doc.text(detail.value, rightColX + 25, yPosition);
-    yPosition += 4.5;
-  });
-
-  yPosition += 15;
-
-  // Orders Table
+  // Build table rows
+  let tableRows = "";
   if (invoiceData.orders && invoiceData.orders.length > 0) {
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(textDark[0], textDark[1], textDark[2]);
-    doc.text("Order Details", 20, yPosition);
-
-    yPosition += 8;
-
-    const tableData: any[] = [];
-
     invoiceData.orders.forEach((order) => {
-      // Order header row
-      tableData.push([
-        { content: `Order #${order.order_number}`, colSpan: 2, styles: { fontStyle: "bold", fillColor: bgLight } },
-        { content: new Date(order.created_at).toLocaleDateString(), styles: { fontStyle: "bold", fillColor: bgLight } },
-        { content: `$${order.total.toFixed(2)}`, styles: { fontStyle: "bold", fillColor: bgLight, halign: "right" } },
-      ]);
-
-      // Order items
       if (order.items && order.items.length > 0) {
         order.items.forEach((item) => {
-          tableData.push([
-            "",
-            `${item.name} (x${item.quantity})`,
-            "",
-            `$${(item.price * item.quantity).toFixed(2)}`,
-          ]);
+          const itemDate = new Date(order.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+          const endDate = new Date(invoiceData.period_end).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+          tableRows += `
+            <tr>
+              <td style="padding: 12px 0; border-bottom: 0.5px solid #e6e6e6;">
+                <div style="font-size: 10pt;">${item.name}</div>
+                <div style="font-size: 8pt; color: #666; margin-top: 2px;">${itemDate} - ${endDate}</div>
+              </td>
+              <td style="padding: 12px 8px; border-bottom: 0.5px solid #e6e6e6; text-align: center;">${item.quantity}</td>
+              <td style="padding: 12px 8px; border-bottom: 0.5px solid #e6e6e6; text-align: right;">AED ${item.price.toFixed(2)}</td>
+              <td style="padding: 12px 0; border-bottom: 0.5px solid #e6e6e6; text-align: right;">AED ${(item.price * item.quantity).toFixed(2)}</td>
+            </tr>
+          `;
         });
       }
 
-      // Order fees
-      tableData.push([
-        "",
-        "Subtotal",
-        "",
-        `$${order.subtotal.toFixed(2)}`,
-      ]);
-
+      // Add delivery fee
       if (order.delivery_fee > 0) {
-        tableData.push([
-          "",
-          "Delivery Fee",
-          "",
-          `$${order.delivery_fee.toFixed(2)}`,
-        ]);
+        const itemDate = new Date(order.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        const endDate = new Date(invoiceData.period_end).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+        tableRows += `
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 0.5px solid #e6e6e6;">
+              <div style="font-size: 10pt;">Delivery Fee</div>
+              <div style="font-size: 8pt; color: #666; margin-top: 2px;">${itemDate} - ${endDate}</div>
+            </td>
+            <td style="padding: 12px 8px; border-bottom: 0.5px solid #e6e6e6; text-align: center;">1</td>
+            <td style="padding: 12px 8px; border-bottom: 0.5px solid #e6e6e6; text-align: right;">AED ${order.delivery_fee.toFixed(2)}</td>
+            <td style="padding: 12px 0; border-bottom: 0.5px solid #e6e6e6; text-align: right;">AED ${order.delivery_fee.toFixed(2)}</td>
+          </tr>
+        `;
       }
 
+      // Add service fee
       if (order.service_fee > 0) {
-        tableData.push([
-          "",
-          "Service Fee",
-          "",
-          `$${order.service_fee.toFixed(2)}`,
-        ]);
+        const itemDate = new Date(order.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        const endDate = new Date(invoiceData.period_end).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+        tableRows += `
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 0.5px solid #e6e6e6;">
+              <div style="font-size: 10pt;">Service Fee</div>
+              <div style="font-size: 8pt; color: #666; margin-top: 2px;">${itemDate} - ${endDate}</div>
+            </td>
+            <td style="padding: 12px 8px; border-bottom: 0.5px solid #e6e6e6; text-align: center;">1</td>
+            <td style="padding: 12px 8px; border-bottom: 0.5px solid #e6e6e6; text-align: right;">AED ${order.service_fee.toFixed(2)}</td>
+            <td style="padding: 12px 0; border-bottom: 0.5px solid #e6e6e6; text-align: right;">AED ${order.service_fee.toFixed(2)}</td>
+          </tr>
+        `;
       }
     });
+  }
 
-    autoTable(doc, {
-      startY: yPosition,
-      head: [["Date", "Description", "Customer", "Amount"]],
-      body: tableData,
-      theme: "plain",
-      styles: {
-        fontSize: 9,
-        cellPadding: 4,
-        textColor: textDark,
-      },
-      headStyles: {
-        fillColor: bgLight,
-        textColor: textDark,
-        fontStyle: "bold",
-        fontSize: 9,
-      },
-      columnStyles: {
-        0: { cellWidth: 25 },
-        1: { cellWidth: 70 },
-        2: { cellWidth: 45 },
-        3: { cellWidth: 30, halign: "right" },
-      },
-      margin: { left: 20, right: 20 },
+  invoiceContainer.innerHTML = `
+    <div style="font-family: var(--font-geist-sans), -apple-system, sans-serif; color: #000;">
+      <!-- Header -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px;">
+        <h1 style="font-size: 28pt; font-weight: 700; margin: 0;">Invoice</h1>
+        <img src="/logo.png" alt="Cuts Logo" style="width: 60px; height: 60px; object-fit: contain;" />
+      </div>
+
+      <!-- Invoice details -->
+      <div style="margin-bottom: 30px;">
+        <div style="margin-bottom: 6px;">
+          <span style="font-weight: 600; font-size: 10pt;">Invoice number</span>
+          <span style="margin-left: 40px; font-size: 10pt;">${invoiceData.invoiceNumber}</span>
+        </div>
+        <div style="margin-bottom: 6px;">
+          <span style="font-weight: 600; font-size: 10pt;">Date of issue</span>
+          <span style="margin-left: 51px; font-size: 10pt;">${issueDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</span>
+        </div>
+        <div>
+          <span style="font-weight: 600; font-size: 10pt;">Date due</span>
+          <span style="margin-left: 76px; font-size: 10pt;">${dueDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</span>
+        </div>
+      </div>
+
+      <!-- Two columns -->
+      <div style="display: flex; gap: 80px; margin-bottom: 30px;">
+        <div style="flex: 1;">
+          <div style="font-weight: 600; font-size: 10pt; margin-bottom: 6px;">Cuts LLC</div>
+          <div style="font-size: 10pt; margin-bottom: 4px;">Baqir Husain</div>
+          <div style="font-size: 10pt; margin-bottom: 4px;">Dubai, United Arab Emirates</div>
+          <div style="font-size: 10pt;">support@cuts.ae</div>
+        </div>
+        <div style="flex: 1;">
+          <div style="font-weight: 600; font-size: 10pt; margin-bottom: 6px;">Bill to</div>
+          <div style="font-weight: 600; font-size: 10pt; margin-bottom: 4px;">${invoiceData.restaurant_name}</div>
+          ${invoiceData.restaurant_address ? `<div style="font-size: 10pt; margin-bottom: 4px;">${invoiceData.restaurant_address}</div>` : ""}
+          ${invoiceData.restaurant_email ? `<div style="font-size: 10pt; margin-bottom: 4px;">${invoiceData.restaurant_email}</div>` : ""}
+          ${invoiceData.restaurant_phone ? `<div style="font-size: 10pt;">${invoiceData.restaurant_phone}</div>` : ""}
+        </div>
+      </div>
+
+      <!-- Amount due -->
+      <div style="font-size: 16pt; font-weight: 700; margin-bottom: 30px;">
+        AED ${invoiceData.amount.toFixed(2)} due ${dueDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+      </div>
+
+      <!-- Table -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <thead>
+          <tr style="border-bottom: 0.5px solid #e6e6e6;">
+            <th style="text-align: left; font-weight: 600; font-size: 10pt; padding: 8px 0;">Description</th>
+            <th style="text-align: center; font-weight: 600; font-size: 10pt; padding: 8px;">Qty</th>
+            <th style="text-align: right; font-weight: 600; font-size: 10pt; padding: 8px;">Unit price</th>
+            <th style="text-align: right; font-weight: 600; font-size: 10pt; padding: 8px 0;">Amount</th>
+          </tr>
+        </thead>
+        <tbody style="font-size: 10pt;">
+          ${tableRows}
+        </tbody>
+      </table>
+
+      <!-- Summary -->
+      <div style="margin-top: 20px; margin-left: auto; width: 200px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 10pt;">
+          <span>Subtotal</span>
+          <span>AED ${subtotal.toFixed(2)}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 10pt;">
+          <span>Total</span>
+          <span>AED ${invoiceData.amount.toFixed(2)}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-weight: 600; font-size: 10pt;">
+          <span>Amount due</span>
+          <span>AED ${invoiceData.amount.toFixed(2)}</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(invoiceContainer);
+
+  try {
+    // Wait for fonts and images to load
+    await document.fonts.ready;
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Convert to canvas
+    const canvas = await html2canvas(invoiceContainer, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: "#ffffff",
     });
 
-    yPosition = (doc as any).lastAutoTable.finalY + 10;
+    // Create PDF
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
+
+    const imgWidth = 210; // A4 width in mm
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+
+    // Save
+    const fileName = `${invoiceData.invoiceNumber.replace(/\s+/g, "_")}_${invoiceData.restaurant_name.replace(/\s+/g, "_")}.pdf`;
+    pdf.save(fileName);
+  } finally {
+    document.body.removeChild(invoiceContainer);
   }
-
-  // Summary Section
-  if (yPosition > pageHeight - 60) {
-    doc.addPage();
-    yPosition = 20;
-  }
-
-  yPosition += 10;
-
-  // Summary box
-  const summaryX = pageWidth - 80;
-  const summaryWidth = 60;
-
-  doc.setFillColor(bgLight[0], bgLight[1], bgLight[2]);
-  doc.rect(summaryX - 5, yPosition - 5, summaryWidth + 10, 35, "F");
-
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(textLight[0], textLight[1], textLight[2]);
-  doc.text("TOTAL AMOUNT", summaryX, yPosition);
-
-  yPosition += 8;
-
-  doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text(`$${invoiceData.amount.toFixed(2)}`, summaryX, yPosition);
-
-  yPosition += 8;
-
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(textLight[0], textLight[1], textLight[2]);
-
-  const statusColor = invoiceData.status === "paid"
-    ? [34, 197, 94] // Green-500
-    : invoiceData.status === "pending"
-    ? [234, 179, 8] // Yellow-500
-    : [239, 68, 68]; // Red-500
-
-  doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
-  doc.text(`Status: ${invoiceData.status.toUpperCase()}`, summaryX, yPosition);
-
-  // Footer
-  yPosition = pageHeight - 30;
-
-  doc.setDrawColor(229, 231, 235);
-  doc.setLineWidth(0.5);
-  doc.line(20, yPosition, pageWidth - 20, yPosition);
-
-  yPosition += 8;
-
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(textLight[0], textLight[1], textLight[2]);
-  doc.text("Thank you for your business!", 20, yPosition);
-
-  doc.setFontSize(8);
-  yPosition += 5;
-  doc.text("For questions about this invoice, please contact support@cuts.ae", 20, yPosition);
-
-  // Page number
-  doc.text(`Page 1 of 1`, pageWidth - 20, yPosition, { align: "right" });
-
-  // Save the PDF
-  const fileName = `${invoiceData.invoiceNumber.replace(/\s+/g, "_")}_${invoiceData.restaurant_name.replace(/\s+/g, "_")}.pdf`;
-  doc.save(fileName);
 }
 
-export function downloadInvoicePDF(invoiceData: InvoiceData) {
+export async function downloadInvoicePDF(invoiceData: InvoiceData) {
   try {
-    generateInvoicePDF(invoiceData);
+    await generateInvoicePDF(invoiceData);
     return true;
   } catch (error) {
     console.error("Error generating PDF:", error);

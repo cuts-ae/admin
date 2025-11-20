@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/admin-layout";
 import { api } from "@/lib/api";
-import { Package, SearchOutlined, Filter } from "@mui/icons-material";
+import { Package, Search, Filter } from "@/components/icons";
 
 interface Order {
   id: number;
@@ -69,7 +69,7 @@ export default function OrdersPage() {
         <div className="bg-white rounded-lg shadow p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="relative">
-              <SearchOutlined className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
                 placeholder="Search orders..."
