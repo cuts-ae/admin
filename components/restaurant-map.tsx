@@ -4,11 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { MapPin, Loader, AlertCircle } from "@/components/icons";
 
 interface Restaurant {
-  id: number;
+  id: number | string;
   name: string;
   latitude: number;
   longitude: number;
   status: string;
+  operating_status?: string;
   orders_today?: number;
 }
 
@@ -30,6 +31,7 @@ export default function RestaurantMap({ restaurants }: RestaurantMapProps) {
 
   useEffect(() => {
     const token = process.env.NEXT_PUBLIC_MAPKIT_TOKEN;
+    console.log("MapKit token present:", !!token, "Length:", token?.length);
 
     if (!token) {
       setError("MapKit token not configured. Please add NEXT_PUBLIC_MAPKIT_TOKEN to .env.local");
@@ -89,23 +91,22 @@ export default function RestaurantMap({ restaurants }: RestaurantMapProps) {
     }
 
     try {
-      // Initialize MapKit if not already initialized
-      const initAndCreateMap = () => {
+      const createMap = () => {
         if (!mapRef.current) {
           setError("Map container not found");
           return;
         }
 
         try {
-          // Abu Dhabi center coordinates
-          const center = new window.mapkit.Coordinate(24.4539, 54.3773);
+          // Abu Dhabi wider view to include Yas Island
+          const center = new window.mapkit.Coordinate(24.45, 54.5);
 
-          // Create map
+          // Create map with wider span to show all Abu Dhabi including Yas Island
           const map = new window.mapkit.Map(mapRef.current, {
             center: center,
             region: new window.mapkit.CoordinateRegion(
               center,
-              new window.mapkit.CoordinateSpan(0.15, 0.15)
+              new window.mapkit.CoordinateSpan(0.25, 0.35)
             ),
             colorScheme: window.mapkit.Map.ColorSchemes.Light,
             showsMapTypeControl: false,
@@ -119,21 +120,23 @@ export default function RestaurantMap({ restaurants }: RestaurantMapProps) {
           // Add restaurant markers
           const annotations: any[] = [];
           restaurants.forEach((restaurant) => {
+            if (!restaurant.latitude || !restaurant.longitude) return;
+
             const coordinate = new window.mapkit.Coordinate(
               restaurant.latitude,
               restaurant.longitude
             );
 
-            const isActive = restaurant.status === "active" || restaurant.status === "open";
+            const isActive = restaurant.status === "active" || restaurant.status === "open" || restaurant.operating_status === "open";
 
-            // Create annotation
+            // Create annotation - all markers red
             const annotation = new window.mapkit.MarkerAnnotation(coordinate, {
               color: "#ef4444",
               glyphColor: "#ffffff",
               title: restaurant.name,
-              subtitle: `${isActive ? "Active" : "Inactive"}${
+              subtitle: `${isActive ? "Open" : "Closed"}${
                 restaurant.orders_today !== undefined
-                  ? ` • ${restaurant.orders_today} orders today`
+                  ? ` - ${restaurant.orders_today} orders today`
                   : ""
               }`,
             });
@@ -141,7 +144,9 @@ export default function RestaurantMap({ restaurants }: RestaurantMapProps) {
             annotations.push(annotation);
           });
 
-          map.showItems(annotations);
+          if (annotations.length > 0) {
+            map.showItems(annotations, { padding: new window.mapkit.Padding(40, 40, 40, 40) });
+          }
           setMapLoaded(true);
         } catch (mapErr) {
           console.error("Map creation error:", mapErr);
@@ -149,20 +154,33 @@ export default function RestaurantMap({ restaurants }: RestaurantMapProps) {
         }
       };
 
-      // Initialize MapKit with callback
-      if (!window.mapkit.isInitialized) {
-        window.mapkit.init({
-          authorizationCallback: (done: any) => {
-            done(token);
-          },
-          language: "en",
+      // Listen for initialization errors before calling init
+      window.mapkit.addEventListener("error", (event: any) => {
+        console.error("MapKit error event:", event);
+        setError(`MapKit error: ${event.message || event.status || 'Unknown error'}`);
+      });
+
+      // Check if already initialized
+      if (window.mapkit.services && window.mapkit.services.authorizationCallback) {
+        // Already initialized, just create the map
+        requestAnimationFrame(() => {
+          setTimeout(createMap, 100);
         });
+        return;
       }
 
+      // Initialize MapKit with callback
+      window.mapkit.init({
+        authorizationCallback: (done: any) => {
+          console.log("MapKit auth callback triggered, providing token of length:", token.length);
+          done(token);
+        },
+        language: "en",
+      });
+
       // Wait for initialization to complete before creating map
-      // Use requestAnimationFrame to ensure DOM is ready
       requestAnimationFrame(() => {
-        setTimeout(initAndCreateMap, 200);
+        setTimeout(createMap, 300);
       });
     } catch (err) {
       console.error("MapKit initialization error:", err);

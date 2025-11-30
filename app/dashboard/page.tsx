@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/admin-layout";
-import RestaurantMap from "@/components/restaurant-map";
 import { api } from "@/lib/api";
+import RestaurantMap from "@/components/restaurant-map";
 import {
   TrendingUp,
   DollarSign,
@@ -40,14 +40,16 @@ interface Analytics {
   topRestaurants?: Array<{ id: number; name: string; orders: number; revenue: string }>;
 }
 
-// Mock restaurant locations in Abu Dhabi
-const mockRestaurants = [
-  { id: 1, name: "FitFresh Abu Dhabi", latitude: 24.4539, longitude: 54.3773, status: "active", orders_today: 45 },
-  { id: 2, name: "Healthy Bites Marina", latitude: 24.4200, longitude: 54.5500, status: "active", orders_today: 32 },
-  { id: 3, name: "Green Bowl Yas", latitude: 24.4900, longitude: 54.6100, status: "active", orders_today: 28 },
-  { id: 4, name: "Fresh Eats Downtown", latitude: 24.4200, longitude: 54.4300, status: "inactive", orders_today: 0 },
-  { id: 5, name: "Protein Palace Corniche", latitude: 24.4800, longitude: 54.3500, status: "active", orders_today: 51 },
-];
+interface Restaurant {
+  id: number | string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  status: string;
+  is_active: boolean;
+  operating_status?: string;
+  orders_today?: number;
+}
 
 // Mock data for charts
 const revenueData = [
@@ -82,17 +84,30 @@ const orderStatusData = [
 
 export default function DashboardPage() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadAnalytics();
+    loadData();
   }, []);
 
-  const loadAnalytics = async () => {
+  const loadData = async () => {
     setLoading(true);
-    const response = await api.getAnalytics();
-    if (response.success) {
-      setAnalytics(response.data);
+    const [analyticsResponse, restaurantsResponse] = await Promise.all([
+      api.getAnalytics(),
+      api.getRestaurants(),
+    ]);
+    if (analyticsResponse.success) {
+      setAnalytics(analyticsResponse.data);
+    }
+    if (restaurantsResponse.success) {
+      // Extract lat/lng from nested address object
+      const restaurantsWithCoords = (restaurantsResponse.data || []).map((r: any) => ({
+        ...r,
+        latitude: r.address?.latitude || r.latitude,
+        longitude: r.address?.longitude || r.longitude,
+      }));
+      setRestaurants(restaurantsWithCoords);
     }
     setLoading(false);
   };
@@ -198,19 +213,16 @@ export default function DashboardPage() {
           })}
         </div>
 
-        {/* Map and Top Restaurants */}
+        {/* Map and Top Restaurants Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Restaurant Map */}
           <div className="bg-white rounded-xl shadow-sm border border-border/40 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-gray-700" />
-                <h3 className="text-lg font-semibold text-gray-900">Restaurant Locations</h3>
-              </div>
-              <p className="text-sm text-gray-600">Abu Dhabi, United Arab Emirates</p>
+            <div className="flex items-center gap-2 mb-4">
+              <MapPin className="w-5 h-5 text-gray-700" />
+              <h3 className="text-lg font-semibold text-gray-900">Restaurant Locations</h3>
             </div>
-            <div className="h-[400px]">
-              <RestaurantMap restaurants={mockRestaurants} />
+            <div className="h-[340px]">
+              <RestaurantMap restaurants={restaurants} />
             </div>
           </div>
 
@@ -220,30 +232,50 @@ export default function DashboardPage() {
               <Trophy className="w-5 h-5 text-gray-700" />
               <h3 className="text-lg font-semibold text-gray-900">Top Performing Restaurants</h3>
             </div>
-            <div className="space-y-4">
-              {[
-                ...mockRestaurants.filter(r => r.status === "active"),
-                { id: 6, name: "Healthy Haven", latitude: 0, longitude: 0, status: "active", orders_today: 18 }
-              ]
-                .sort((a, b) => (b.orders_today || 0) - (a.orders_today || 0))
-                .slice(0, 5)
-                .map((restaurant, index) => (
-                  <div key={restaurant.id} className="flex items-center justify-between py-3 border-b last:border-0">
+            <div className="space-y-2 h-[340px]">
+              {Array.from({ length: 5 }).map((_, index) => {
+                const sortedRestaurants = [...restaurants]
+                  .sort((a, b) => (b.orders_today || 0) - (a.orders_today || 0));
+                const restaurant = sortedRestaurants[index];
+
+                if (restaurant) {
+                  return (
+                    <div key={restaurant.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center text-white font-bold text-sm shadow-lg">
+                          #{index + 1}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900 text-sm">{restaurant.name}</p>
+                          <p className="text-xs text-gray-600">{restaurant.orders_today || 0} orders today</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-gray-900 text-sm">AED {((restaurant.orders_today || 0) * 85).toFixed(0)}</p>
+                        <p className="text-xs text-gray-500">Revenue</p>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={`empty-${index}`} className="flex items-center justify-between p-3 bg-gray-50/50 rounded-lg border border-dashed border-gray-200">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gray-900 flex items-center justify-center text-white font-bold shadow-lg">
+                      <div className="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center text-gray-400 font-bold text-sm">
                         #{index + 1}
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">{restaurant.name}</p>
-                        <p className="text-sm text-gray-600">{restaurant.orders_today} orders today</p>
+                        <p className="font-medium text-gray-400 text-sm">No restaurant</p>
+                        <p className="text-xs text-gray-300">-</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-gray-900">AED {((restaurant.orders_today || 0) * 85).toFixed(0)}</p>
-                      <p className="text-xs text-gray-500">Revenue</p>
+                      <p className="font-semibold text-gray-300 text-sm">-</p>
+                      <p className="text-xs text-gray-300">-</p>
                     </div>
                   </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

@@ -89,7 +89,6 @@ export default function AdminLayout({ children, pageTitle, pageSubtitle, showLas
     { name: "Invoices", href: "/dashboard/invoices", icon: FileText },
     { name: "Users", href: "/dashboard/users", icon: Users },
     { name: "Drivers", href: "/dashboard/drivers", icon: Truck },
-    { name: "Orders", href: "/dashboard/orders", icon: ShoppingCart },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];
 
