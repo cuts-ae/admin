@@ -1,10 +1,7 @@
 "use client";
 
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
-
 export interface InvoiceData {
-  id: number;
+  id: string;
   invoiceNumber: string;
   restaurant_name: string;
   restaurant_address?: string;
@@ -12,8 +9,8 @@ export interface InvoiceData {
   restaurant_phone?: string;
   amount: number;
   status: string;
-  period_start: string;
-  period_end: string;
+  period_start?: string;
+  period_end?: string;
   created_at: string;
   orders?: Array<{
     id: number;
@@ -33,8 +30,13 @@ export interface InvoiceData {
 }
 
 export async function generateInvoicePDF(invoiceData: InvoiceData) {
+  // Dynamic imports to avoid SSR issues
+  const jsPDF = (await import("jspdf")).default;
+  const html2canvas = (await import("html2canvas")).default;
+
   const issueDate = new Date(invoiceData.created_at);
-  const dueDate = new Date(invoiceData.period_end);
+  const periodEnd = invoiceData.period_end || invoiceData.created_at;
+  const dueDate = new Date(periodEnd);
   dueDate.setDate(dueDate.getDate() + 7);
 
   const subtotal = invoiceData.orders?.reduce((sum, order) => sum + order.subtotal, 0) || 0;
@@ -55,7 +57,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData) {
       if (order.items && order.items.length > 0) {
         order.items.forEach((item) => {
           const itemDate = new Date(order.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-          const endDate = new Date(invoiceData.period_end).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+          const endDate = new Date(periodEnd).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
           tableRows += `
             <tr>
               <td style="padding: 12px 0; border-bottom: 0.5px solid #e6e6e6;">
@@ -73,7 +75,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData) {
       // Add delivery fee
       if (order.delivery_fee > 0) {
         const itemDate = new Date(order.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-        const endDate = new Date(invoiceData.period_end).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+        const endDate = new Date(periodEnd).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
         tableRows += `
           <tr>
             <td style="padding: 12px 0; border-bottom: 0.5px solid #e6e6e6;">
@@ -90,7 +92,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData) {
       // Add service fee
       if (order.service_fee > 0) {
         const itemDate = new Date(order.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-        const endDate = new Date(invoiceData.period_end).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+        const endDate = new Date(periodEnd).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
         tableRows += `
           <tr>
             <td style="padding: 12px 0; border-bottom: 0.5px solid #e6e6e6;">
